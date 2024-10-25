@@ -1,7 +1,11 @@
 # Larchier
 A tiny hobby project, created by none other than the GOAT, the BOAT, the LOAT, **architelos**!!
+
 Not the cleanest code, nor the least complex, but I'm happy :)
+
 Fabric/Forge support coming *soon(TM)*!
+
+(`Larchier` only supports Windows for the time being, sorry.)
 
 ## To run MC:
 ##### Fetch the repository, and then:
@@ -15,4 +19,4 @@ $ src/bin.js launch
 (standalone .exe also coming *soon(TM)*!!)
 
 ## License
-MIT, see LICENSE
+MIT, see [LICENSE](LICENSE)
