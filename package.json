@@ -1,0 +1,35 @@
+{
+    "name": "larchier",
+    "version": "1.0.0-beta",
+    "description": "Lightweight CLI Minecraft launcher, done as a hobby project :D",
+    "type": "module",
+    "main": "src/cli.js",
+    "bin": {
+        "larchier": "./src/bin.js"
+    },
+    "author": "architelos",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/architelos/larchier.git"
+    },
+    "bugs": {
+        "url": "https://github.com/architelos/larchier/issues"
+    },
+    "homepage": "https://github.com/architelos/larchier#readme",
+    "dependencies": {
+        "chalk": "^5.3.0",
+        "commander": "^12.1.0",
+        "fast-glob": "^3.3.2",
+        "ora": "^8.1.0",
+        "prompts": "^2.4.2",
+        "uuid": "^10.0.0",
+        "yauzl-promise": "^4.0.0"
+    },
+    "devDependencies": {
+        "@types/adm-zip": "^0.5.5",
+        "@types/node": "^22.7.7",
+        "@types/yargs": "^17.0.33",
+        "@types/yauzl-promise": "^4.0.1"
+    }
+}
