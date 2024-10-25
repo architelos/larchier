@@ -13,9 +13,6 @@
         "type": "git",
         "url": "git+https://github.com/architelos/larchier.git"
     },
-    "scripts": {
-        "build": "pkg -t node22-windows . --out-path ./dist"
-    },
     "bugs": {
         "url": "https://github.com/architelos/larchier/issues"
     },
