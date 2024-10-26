@@ -16,10 +16,6 @@
     "bugs": {
         "url": "https://github.com/architelos/larchier/issues"
     },
-    "scripts": {
-        "build": "bun build ./src/bin.js --compile --minify --target=bun-windows-x64 --outfile dist/larchier",
-        "build-dev": "bun build ./src/bin.js --compile --sourcemap --target=bun-windows-x64 --outfile dist/larchier && dist/larchier"
-    },
     "homepage": "https://github.com/architelos/larchier#readme",
     "dependencies": {
         "chalk": "^5.3.0",
