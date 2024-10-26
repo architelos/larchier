@@ -1,3 +1,5 @@
+import { join } from "node:path";
+
 import { InvalidArch, InvalidOS } from "./exc.js";
 
 const globals = {};
@@ -28,11 +30,11 @@ globals.manifestUrl = "https://launchermeta.mojang.com/mc/game/version_manifest_
 globals.assetsUrl = "https://resources.download.minecraft.net/";
 
 // TODO: This doesn't support OSX/Linux yet
-globals.basePath = `${process.env.LOCALAPPDATA}/larchier`;
-globals.javaPath = `${globals.basePath}/java`;
-globals.profilesFilePath = `${globals.basePath}/profiles.json`;
-globals.instancesFilePath = `${globals.basePath}/instances.json`;
-globals.instancesPath = `${globals.basePath}/instances`;
+globals.basePath = join(process.env.LOCALAPPDATA, "larchier");
+globals.javaPath = join(globals.basePath, "java");
+globals.profilesFilePath = join(globals.basePath, "profiles.json");
+globals.instancesFilePath = join(globals.basePath, "instances.json");
+globals.instancesPath = join(globals.basePath, "instances");
 
 // TODO: Nor does this
 // Oracle doesn't support jdk 8 anymore? Couldn't find a .zip file for download

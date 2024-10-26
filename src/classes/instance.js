@@ -2,11 +2,12 @@ import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { createWriteStream, existsSync, mkdirSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { basename, dirname, sep } from "node:path";
+import { basename, dirname, sep, join } from "node:path";
 import { pipeline } from "node:stream/promises";
 
 import chalk from "chalk";
 import glob from "fast-glob";
+import slash from "slash";
 import { oraPromise } from "ora";
 import { open } from "yauzl-promise";
 
@@ -48,10 +49,10 @@ class Instance {
             } // Constructor doesn't support async functions
             // TODO: There's def a better way to do this though
         }
-        this.clientPath = `${this.gamePath}/versions/${this.gameVersion}`;
-        this.librariesPath = `${this.gamePath}/libraries`;
-        this.nativesPath = `${this.clientPath}/natives`;
-        this.assetsPath = `${this.gamePath}/assets`;
+        this.clientPath = join(this.gamePath, "versions", this.gameVersion);
+        this.librariesPath = join(this.gamePath, "libraries");
+        this.nativesPath = join(this.clientPath, "natives");
+        this.assetsPath = join(this.gamePath, "assets");
 
         this.versionData = "";
 
@@ -96,8 +97,8 @@ class Instance {
         }
         const profileData = await getProfile(currentProfile);
 
-        const jarFiles = await glob(`${this.librariesPath.replace(/\\/g, "/")}/**/*.jar`);
-        jarFiles.push(`${this.clientPath}/${this.gameVersion}.jar`);
+        const jarFiles = await glob(join(slash(this.librariesPath), "/**/*.jar"));
+        jarFiles.push(join(this.clientPath, `${this.gameVersion}.jar`));
         const correctedJarFiles = correctJarFiles(jarFiles);
 
         // TODO: Not hardcode this
@@ -180,18 +181,18 @@ class Instance {
 
         const [javaVersion, javaUrl] = getJava(this.gameVersion);
 
-        const javaPath = `${globals.javaPath}/${javaVersion}`;
+        const javaPath = join(globals.javaPath, javaVersion);
         if (existsSync(javaPath)) {
             // Java binaries already exist, no need to download
             console.log(`jdk ${javaVersion} already exists; no need to download`);
-            this.javaBinary = `${javaPath}/bin/javaw.exe`;
+            this.javaBinary = join(javaPath, "bin", "javaw.exe");
 
             return;
         }
 
         await mkdir(javaPath, { recursive: true });
 
-        const filePath = `${javaPath}\\jdk-${javaVersion}.zip`;
+        const filePath = join(javaPath, `jdk-${javaVersion}.zip`);
         await oraPromise(downloadFile(javaUrl, filePath), `downloading jdk ${javaVersion}...`);
         await oraPromise(async () => {
             const zip = await open(filePath);
@@ -204,7 +205,7 @@ class Instance {
 
                     const pathParts = fileName.split("/");
                     pathParts.shift();
-                    const path = `${javaPath}/${pathParts.join(sep)}`;
+                    const path = join(javaPath, ...pathParts); // No need for sep, as join automatically handles path separators based on the platform
 
                     if (entry.filename.endsWith("/")) {
                         if (pathParts.length === 0) {
@@ -229,7 +230,7 @@ class Instance {
             await rm(filePath);
         }, "extracting archive...");
 
-        this.javaBinary = `${javaPath}/bin/javaw.exe`; // TODO: support other OSes
+        this.javaBinary = join(javaPath, "bin", "javaw.exe"); // TODO: support other OSes
     }
 
     /**
@@ -243,12 +244,20 @@ class Instance {
         await ensureDirExists(this.clientPath);
 
         if (this.versionData.downloads.client_mappings) {
-            await oraPromise(downloadFile(this.versionData.downloads.client_mappings.url, `${this.clientPath}/client.txt`), "downloading client mappings...");
+            await oraPromise(downloadFile(
+                this.versionData.downloads.client_mappings.url,
+                join(this.clientPath, "client.txt")),
+                "downloading client mappings..."
+            );
         } else {
             console.log(`no client mappings found`);
         }
 
-        await oraPromise(downloadFile(this.versionData.downloads.client.url, `${this.clientPath}/${this.gameVersion}.jar`), "downloading client .jar...");
+        await oraPromise(downloadFile(
+                this.versionData.downloads.client.url,
+                join(this.clientPath, `${this.gameVersion}.jar`)),
+                "downloading client .jar..."
+            );
     }
 
     /**
@@ -267,7 +276,7 @@ class Instance {
                 continue;
             }
 
-            const jarPath = `${this.librariesPath}/${library.downloads.artifact.path}`;
+            const jarPath = join(this.librariesPath, library.downloads.artifact.path);
             await ensureDirExists(dirname(jarPath));
             await oraPromise(downloadFile(library.downloads.artifact.url, jarPath), library.name);
 
@@ -281,7 +290,7 @@ class Instance {
                     nativeClassifier = `${globals.natives}-${globals.archNumber}`;
                 }
 
-                const nativePath = `${this.librariesPath}/${classifiers[nativeClassifier].path}`;
+                const nativePath = join(this.librariesPath, classifiers[nativeClassifier].path);
                 await ensureDirExists(dirname(nativePath));
                 await oraPromise(downloadFile(classifiers[nativeClassifier].url, nativePath));
             }
@@ -295,7 +304,7 @@ class Instance {
     async extractNatives() {
         await ensureDirExists(this.nativesPath, { recursive: true });
 
-        const jarEntries = await glob(`${this.librariesPath.replace(/\\/g, "/")}/**/*.jar`); // Get all .jar files (the / replacing is required cuz fast-glob doesn't like it if not)
+        const jarEntries = await glob(join(slash(this.librariesPath), "/**/*.jar")); // Get all .jar files
         for (const jarEntry of jarEntries) {
             if (!basename(jarEntry).includes("natives")) {
                 continue;
@@ -311,7 +320,7 @@ class Instance {
                         continue;
                     }
 
-                    const path = `${this.nativesPath}/${basename(zipEntry.filename)}`;
+                    const path = join(this.nativesPath, basename(zipEntry.filename));
                     await pipeline(await zipEntry.openReadStream(), createWriteStream(path));
                 }
             }, basename(jarEntry));
@@ -328,10 +337,10 @@ class Instance {
 
         await ensureDirExists(this.assetsPath);
 
-        const objectsPath = `${this.assetsPath}/objects`;
-        const indexesPath = `${this.assetsPath}/indexes`;
-        const logConfigPath = `${this.assetsPath}/log_configs`;
-        const virtualPath = `${this.assetsPath}/virtual/legacy`;
+        const objectsPath = join(this.assetsPath, "objects");
+        const indexesPath = join(this.assetsPath, "indexes");
+        const logConfigPath = join(this.assetsPath, "log_configs");
+        const virtualPath = join(this.assetsPath, "virtual", "legacy");
 
         await ensureDirExists(objectsPath);
         await ensureDirExists(indexesPath);
@@ -340,7 +349,7 @@ class Instance {
         const assetsUrl = this.versionData.assetIndex.url;
         const assetsDataResp = await fetchCatch(assetsUrl);
         const assetsData = await assetsDataResp.json();
-        await writeFile(`${indexesPath}/${basename(assetsUrl)}`, JSON.stringify(assetsData, null, 2));
+        await writeFile(join(indexesPath, basename(assetsUrl)), JSON.stringify(assetsData, null, 2));
 
         const isLegacy = assetsData.virtual || usesLegacyAssets(this.gameVersion);
         if (isLegacy) {
@@ -348,7 +357,7 @@ class Instance {
         }
 
         const logConfigFile = this.versionData.logging.client.file.url;
-        await oraPromise(downloadFile(logConfigFile, `${logConfigPath}/${basename(logConfigFile)}`), "downloading log config...");
+        await oraPromise(downloadFile(logConfigFile, join(logConfigPath, basename(logConfigFile))), "downloading log config...");
 
         await oraPromise(async () => {
             for (const assetKey in assetsData.objects) {
@@ -357,12 +366,17 @@ class Instance {
                 const fullHashes = `${firstHashes}/${assetData.hash}`;
                 const fileUrl = `${globals.assetsUrl}/${fullHashes}`;
 
-                const dirPath = !isLegacy ? `${objectsPath}/${firstHashes}`
-                                : dirname(assetKey) !== "." ? `${virtualPath}/${dirname(assetKey)}` : virtualPath;
+                const dirPath = !isLegacy
+                    ? join(objectsPath, firstHashes)
+                    : dirname(assetKey) !== "."
+                        ? join(virtualPath, dirname(assetKey))
+                        : virtualPath;
                 await ensureDirExists(dirPath);
 
                 const fileName = isLegacy ? basename(assetKey) : assetData.hash;
-                const filePath = isLegacy ? `${dirPath}/${fileName}` : `${dirPath}/${assetData.hash}`;
+                const filePath = isLegacy
+                    ? join(dirPath, fileName)
+                    : join(dirPath, assetData.hash);
                 await downloadFile(fileUrl, filePath);
             }
         }, "downloading assets...");
