@@ -292,7 +292,7 @@ class Instance {
 
                 const nativePath = join(this.librariesPath, classifiers[nativeClassifier].path);
                 await ensureDirExists(dirname(nativePath));
-                await oraPromise(downloadFile(classifiers[nativeClassifier].url, nativePath));
+                await oraPromise(downloadFile(classifiers[nativeClassifier].url, nativePath), `${library.name} (natives)`);
             }
         }
     }
