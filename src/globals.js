@@ -30,6 +30,7 @@ globals.archNumber = globals.arch.replace("x", "");
 
 globals.manifestUrl = "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json";
 globals.assetsUrl = "https://resources.download.minecraft.net/";
+globals.librariesUrl = "https://libraries.minecraft.net";
 
 // TODO: This doesn't support OSX/Linux yet
 globals.basePath = join(slash(process.env.localAppData), "larchier");

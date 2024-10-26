@@ -81,7 +81,6 @@ class Instance {
         await writeFile(globals.instancesFilePath, JSON.stringify(fileContents, null, 2));
     }
 
-    // TODO: Make this work with config, because not every device supports 1920x1080 (job for the weekend :D)
     // TODO: Support Mojang auth
     /**
      * @async
@@ -117,7 +116,8 @@ class Instance {
             "natives_directory": this.nativesPath,
             "launcher_name": "Larchier",
             "launcher_version": globals.version,
-            "classpath": correctedJarFiles.join(getCpSeparator())
+            "classpath": correctedJarFiles.join(getCpSeparator()),
+            "user_properties": "{}"
         }
 
         const cmdArgs = [
@@ -129,20 +129,35 @@ class Instance {
         }
         cmdArgs.push(`-Xmx${this.config.allocatedMem}`);
 
-        for (const jvmArg of this.versionData.arguments.jvm) {
-            if (jvmArg.rules && !parseRules(jvmArg.rules)) {
-                continue;
-            }
-            const toReplace = jvmArg.value ? jvmArg.value : jvmArg;
+        if (this.versionData.arguments?.jvm) {
+            for (let jvmArg of this.versionData.arguments.jvm) {
+                if (jvmArg.rules && !parseRules(jvmArg.rules)) {
+                    continue;
+                }
 
-            cmdArgs.push(replaceInArgument(toReplace, replacements));
+                jvmArg = jvmArg.value ? jvmArg.value : jvmArg;
+                if (Array.isArray(jvmArg)) {
+                    for (const arrJvmArg of jvmArg) {
+                        arrJvmArg.match(/\$\{(\w+)\}/)
+                        ? cmdArgs.push(replaceInArgument(arrJvmArg, replacements))
+                        : cmdArgs.push(arrJvmArg);
+                    }
+                } else {
+                    jvmArg.match(/\$\{(\w+)\}/)
+                    ? cmdArgs.push(replaceInArgument(jvmArg, replacements))
+                    : cmdArgs.push(jvmArg);
+                }
+            }
+        } else { // Push the bare minimums
+            cmdArgs.push(`-Djava.library.path=${replacements.natives_directory}`);
+            cmdArgs.push(...["-cp", replacements.classpath]);
         }
         cmdArgs.push(this.versionData.mainClass);
 
         cmdArgs.push(...["--width", this.config.width]);
         cmdArgs.push(...["--height", this.config.height]);
-
-        for (const gameArg of this.versionData.arguments.game) {
+        const gameArgs = this.versionData.arguments?.game || this.versionData.minecraftArguments.split(" ");
+        for (const gameArg of gameArgs) {
             if (gameArg.rules && !parseRules(gameArg.rules)) {
                 continue;
             }
@@ -276,23 +291,31 @@ class Instance {
                 continue;
             }
 
-            const jarPath = join(this.librariesPath, library.downloads.artifact.path);
-            await ensureDirExists(dirname(jarPath));
-            await oraPromise(downloadFile(library.downloads.artifact.url, jarPath), library.name);
+            const classifiers = library.downloads.classifiers || library.classifiers || {};
+            let nativeClassifier = globals.natives;
+            // Twitch lib is goofy
+            if (globals.os === "windows" && !classifiers[globals.natives]) {
+                nativeClassifier = `${globals.natives}-${globals.archNumber}`;
+            }
 
-            // Some versions (mainly before 1.21.1) have a separate natives entry
             if (library.natives) {
-                const classifiers = library.downloads.classifiers || library.classifiers;
-
-                // Twitch lib is goofy
-                let nativeClassifier = globals.natives;
-                if (globals.os === "windows" && !classifiers[globals.natives]) {
-                    nativeClassifier = `${globals.natives}-${globals.archNumber}`;
-                }
-
                 const nativePath = join(this.librariesPath, classifiers[nativeClassifier].path);
                 await ensureDirExists(dirname(nativePath));
                 await oraPromise(downloadFile(classifiers[nativeClassifier].url, nativePath), `${library.name} (natives)`);
+            }
+
+            if (library.downloads.artifact?.path) { // net.java.jinput:jinput-platform:2.0.5
+                let path = library.downloads.artifact?.path;
+                if (!library.downloads.artifact?.path) {
+                    const urlToExtract = library.downloads.artifact?.url || classifiers[nativeClassifier].url;
+                    path = urlToExtract.replace(globals.librariesUrl, "");
+                }
+
+                if (library.downloads.artifact?.url) { // Again, net.java.jinput:jinput-platform:2.0.5
+                    const jarPath = join(this.librariesPath, path);
+                    await ensureDirExists(dirname(jarPath));
+                    await oraPromise(downloadFile(library.downloads.artifact?.url, jarPath), library.name);
+                }
             }
         }
     }
@@ -349,7 +372,7 @@ class Instance {
         const assetsUrl = this.versionData.assetIndex.url;
         const assetsDataResp = await fetchCatch(assetsUrl);
         const assetsData = await assetsDataResp.json();
-        await writeFile(join(indexesPath, basename(assetsUrl)), JSON.stringify(assetsData, null, 2));
+        await writeFile(join(indexesPath, basename(assetsUrl)), JSON.stringify(assetsData, null, 2), { encoding: "utf-8" });
 
         const isLegacy = assetsData.virtual || usesLegacyAssets(this.gameVersion);
         if (isLegacy) {

@@ -285,6 +285,10 @@ function parseRules(rules) {
  */
 function replaceInArgument(argument, replacements) {
     // TODO: Not use regex? Pretty ugly or at least move it to globals
+    if (!argument.match(/\$\{(\w+)\}/g)) {
+        return argument;
+    }
+
     return argument.replace(/\$\{(\w+)\}/g, (match, key) => {
         return replacements[key] || match; // Return the replacement value or keep the placeholder if key is not found
     });
