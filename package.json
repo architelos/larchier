@@ -1,6 +1,6 @@
 {
     "name": "larchier",
-    "version": "1.0.0-beta",
+    "version": "1.0.0",
     "description": "Lightweight CLI Minecraft launcher, done as a hobby project :D",
     "type": "module",
     "main": "src/cli.js",

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { InvalidArch, InvalidOS } from "./exc.js";
 
 const globals = {};
-globals.version = "1.0.0-beta";
+globals.version = "1.0.0";
 globals.os = (process.platform === "win32")
                     ? "windows"
                     : (process.platform === "darwin")
