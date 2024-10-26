@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { createWriteStream, existsSync, mkdirSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { basename, dirname, sep, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { pipeline } from "node:stream/promises";
 
 import chalk from "chalk";
@@ -97,7 +97,7 @@ class Instance {
         }
         const profileData = await getProfile(currentProfile);
 
-        const jarFiles = await glob(join(slash(this.librariesPath), "/**/*.jar"));
+        const jarFiles = await glob(`${slash(this.librariesPath)}/**/*.jar`);
         jarFiles.push(join(this.clientPath, `${this.gameVersion}.jar`));
         const correctedJarFiles = correctJarFiles(jarFiles);
 
@@ -304,7 +304,7 @@ class Instance {
     async extractNatives() {
         await ensureDirExists(this.nativesPath, { recursive: true });
 
-        const jarEntries = await glob(join(slash(this.librariesPath), "/**/*.jar")); // Get all .jar files
+        const jarEntries = await glob(`${slash(this.librariesPath)}/**/*.jar`); // Get all .jar files
         for (const jarEntry of jarEntries) {
             if (!basename(jarEntry).includes("natives")) {
                 continue;
@@ -413,8 +413,32 @@ async function getAllInstances() {
     return Object.keys(instancesData);
 }
 
+/**
+ * @param {string} instanceName
+ * @async
+ */
+async function removeInstance(instanceName) {
+    let fileContents = await readFile(globals.instancesFilePath, { encoding: "utf-8" });
+
+    const instancesData = JSON.parse(fileContents);
+    delete instancesData[instanceName];
+
+    fileContents = JSON.stringify(instancesData, null, 2);
+    await writeFile(globals.instancesFilePath, fileContents);
+}
+
+/**
+ * @param {string} instanceName
+ * @async
+ */
+async function deleteInstanceData(instanceName) {
+    await rm(join(globals.instancesPath, instanceName), { recursive: true });
+}
+
 export {
     fromInstancesFile,
     getAllInstances,
+    removeInstance,
+    deleteInstanceData,
     Instance
 };

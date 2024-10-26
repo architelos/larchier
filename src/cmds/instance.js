@@ -1,15 +1,21 @@
 import chalk from "chalk";
 import prompt from "prompts";
+import { oraPromise } from "ora";
 
 import { InvalidInstanceName, InvalidVersion, SafeError } from "../exc.js";
-import { Instance } from "../classes/instance.js";
+import {
+    Instance,
+    removeInstance,
+    deleteInstanceData,
+    getAllInstances
+} from "../classes/instance.js";
 import { getVersion } from "../utils.js";
 import { existsSync } from "node:fs";
 
 /**
  * @async
  */
-async function addInstance() {
+async function instanceAdd() {
     const prompts = [
         {
             type: "text",
@@ -27,7 +33,7 @@ async function addInstance() {
             message: "instance type?",
             choices: [
                 { title: "Vanilla", value: "vanilla" },
-                { title: "Fabric", value: "Fabric" }
+                // { title: "Fabric", value: "Fabric" }
             ],
             initial: 0
         },
@@ -91,7 +97,7 @@ async function addInstance() {
     await instance.extractNatives();
     console.log();
 
-    console.log(`${chalk.bold("⸺⸺ downloading objects")}`);
+    console.log(`${chalk.bold("⸺⸺ downloading objects (may take a while)")}`);
     await instance.downloadAssets();
     console.log();
 
@@ -99,4 +105,57 @@ async function addInstance() {
     console.log(`${chalk.bold("done!")}`);
 }
 
-export { addInstance };
+/**
+ * @async
+ */
+async function instanceRemove() {
+    const instanceNames = await getAllInstances();
+    if (!instanceNames) {
+        throw new SafeError("no instances were found");
+    }
+
+    const instanceChoices = []
+    for (const instanceName of instanceNames) {
+        instanceChoices.push({ title: instanceName, value: instanceName });
+    }
+
+    const { toRemove } = await prompt({
+        type: "select",
+        name: "toRemove",
+        message: "instance to remove?",
+        choices: instanceChoices,
+        initial: 0
+    });
+    const { confirmation } = await prompt({
+        type: "confirm",
+        name: "confirmation",
+        message: "are you sure?",
+        initial: false
+    });
+    console.log();
+
+    if (!confirmation) {
+        return console.log(`${chalk.bold("stopping")}`);
+    }
+
+    console.log(`${chalk.bold(`⸺⸺ removing instance: ${toRemove}`)}`);
+    await oraPromise(deleteInstanceData(toRemove), "deleting instance data...");
+    await oraPromise(removeInstance(toRemove), "removing instance...");
+}
+
+/**
+ * @param {boolean} add
+ * @param {boolean} remove
+ * @async
+ */
+async function instance(add, remove) {
+    if (add) {
+        return await instanceAdd();
+    }
+
+    if (remove) {
+        return await instanceRemove();
+    }
+}
+
+export { instance };

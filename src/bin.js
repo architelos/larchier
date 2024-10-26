@@ -16,10 +16,10 @@ import {
 import globals from "./globals.js";
 import { ensureDirExists } from "./utils.js";
 
-import { addInstance } from "./cmds/addInstance.js";
+import { instance } from "./cmds/instance.js";
 import { profile } from "./cmds/profile.js";
 import { launchInstance } from "./cmds/launch.js";
-import { editConfig } from "./cmds/editConfig.js";
+import { config } from "./cmds/config.js";
 
 // https://github.com/tj/commander.js/issues/782
 /**
@@ -68,24 +68,30 @@ program
     .helpOption(false);
 
 program
-    .command("add")
-    .description("Add a new instance")
-    .action(commandRunner(() => {
-        return addInstance();
+    .command("instance")
+    .description("Add/remove an instance")
+    .option("-a, --add", "Add an instance")
+    .option("-r, --remove", "Remove an instance")
+    .action(commandRunner(async (options) => {
+        if (!options.add && !options.remove) {
+            throw new SafeError("no option provided");
+        }
+
+        await instance(options.add, options.remove);
     }));
 
 program
     .command("launch")
     .description("Launch an instance")
-    .action(commandRunner(() => {
-        return launchInstance();
+    .action(commandRunner(async () => {
+        await launchInstance();
     }));
 
 program
     .command("config")
     .description("Edit a config's configuration")
-    .action(commandRunner(() => {
-        return editConfig();
+    .action(commandRunner(async () => {
+        await config();
     }));
 
 program
@@ -94,8 +100,12 @@ program
     .option("-a, --add", "Add a profile")
     .option("-r, --remove", "Remove a profile")
     .option("-u, --use", "Use a profile")
-    .action(commandRunner((options) => {
-        return profile(options.add, options.remove, options.use);
+    .action(commandRunner(async (options) => {
+        if (!options.add && !options.remove && !options.use) {
+            throw new SafeError("no option provided");
+        }
+
+        await profile(options.add, options.remove, options.use);
     }));
 
 await program.parseAsync();

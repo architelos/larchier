@@ -10,7 +10,7 @@ import { getConfigOfInstance, saveConfig } from "../classes/config.js";
 /**
  * @async
  */
-async function editConfig() {
+async function config() {
     const instanceNames = await getAllInstances();
     if (!instanceNames) {
         throw new SafeError("no instances were found");
@@ -66,4 +66,4 @@ async function editConfig() {
     }, `${chalk.bold("editing config...")}`);
 }
 
-export { editConfig };
+export { config };
