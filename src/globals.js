@@ -1,5 +1,7 @@
 import { join } from "node:path";
 
+import slash from "slash";
+
 import { InvalidArch, InvalidOS } from "./exc.js";
 
 const globals = {};
@@ -30,7 +32,7 @@ globals.manifestUrl = "https://launchermeta.mojang.com/mc/game/version_manifest_
 globals.assetsUrl = "https://resources.download.minecraft.net/";
 
 // TODO: This doesn't support OSX/Linux yet
-globals.basePath = join(process.env.LOCALAPPDATA, "larchier");
+globals.basePath = join(slash(process.env.localAppData), "larchier");
 globals.javaPath = join(globals.basePath, "java");
 globals.profilesFilePath = join(globals.basePath, "profiles.json");
 globals.instancesFilePath = join(globals.basePath, "instances.json");
