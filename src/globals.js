@@ -5,7 +5,7 @@ import slash from "slash";
 import { InvalidArch, InvalidOS } from "./exc.js";
 
 const globals = {};
-globals.version = "1.0.0";
+globals.version = "1.1.0";
 globals.os = (process.platform === "win32")
                     ? "windows"
                     : (process.platform === "darwin")
