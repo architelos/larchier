@@ -117,7 +117,9 @@ class Instance {
             "launcher_name": "Larchier",
             "launcher_version": globals.version,
             "classpath": correctedJarFiles.join(getCpSeparator()),
-            "user_properties": "{}"
+            "user_properties": "{}",
+            "game_assets": join(this.assetsPath, "virtual", "legacy") // 1.7 and below
+            // TODO ^ make less janky
         }
 
         const cmdArgs = [
